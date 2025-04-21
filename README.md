@@ -1,54 +1,79 @@
-# Instagram Following Manager
+# Instagram Unfollow Manager
 
-A React Native mobile app that helps you manage your Instagram following list. The app allows you to review and unfollow Instagram users one by one.
+A React Native mobile application that helps you manage your Instagram following list by allowing you to view and unfollow users easily.
 
-✨ Features
-🔐 Login screen for Instagram credentials
+## Features
 
-👥 Follower viewer with profile picture, username, and full name
+- Secure Instagram login
+- View your complete following list
+- See user details including username, full name, and profile picture
+- Unfollow users directly from the app
+- Track your unfollowing activity
 
-📊 Progress-style walkthrough of each followed account
+## Tech Stack
 
-✅ Keep / ❌ Unfollow buttons for each user
+### Frontend
+- React Native
+- TypeScript
+- React Navigation
+- Axios for API calls
 
-📝 End summary showing number and list of unfollowed accounts
+### Backend
+- Python Flask
+- instagrapi for Instagram API integration
+- CORS enabled for cross-origin requests
 
-🎨 High-fidelity UI design optimized for mobile view
+## Setup Instructions
 
-## Setup
+### Backend Setup
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
 
-1. Install dependencies:
-```bash
-npm install
-```
+2. Install Python dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Start the Flask server:
+   ```bash
+   python app.py
+   ```
+   The server will run on `http://localhost:5001`
+
+### Frontend Setup
+1. Install Node.js dependencies:
+   ```bash
+   npm install
+   ```
 
 2. Start the development server:
-```bash
-npx expo start
-```
+   ```bash
+   npm start
+   ```
 
-3. Use Expo Go app on your mobile device to scan the QR code and run the app
+3. Run on your device:
+   - Press 'a' for Android
+   - Press 'i' for iOS
+   - Or scan the QR code with your phone's camera
 
+## API Endpoints
 
+- `POST /api/login` - Login to Instagram
+- `GET /api/following` - Get your following list
+- `POST /api/unfollow` - Unfollow a user
 
+## Security Notes
 
-
-
-
-## Dependencies
-- React Native
-- Expo
-- React Navigation
-- TypeScript
-
-## Development
-
-The app is structured into three main screens:
-
-1. `LoginScreen`: Handles Instagram authentication
-2. `FollowingListScreen`: Shows users one by one with unfollow/skip options
-3. `ResultScreen`: Displays summary of unfollowed users
+- The app uses Instagram's official API through the instagrapi library
+- Your credentials are only used for authentication and are not stored
+- All API calls are made over HTTPS
 
 ## Contributing
 
-Feel free to submit issues and enhancement requests. 
+Feel free to submit issues and enhancement requests!
+
+## License
+
+This project is licensed under the MIT License.
