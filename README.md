@@ -2,13 +2,18 @@
 
 A React Native mobile app that helps you manage your Instagram following list. The app allows you to review and unfollow Instagram users one by one.
 
-## Features
+✨ Features
+🔐 Login screen for Instagram credentials
 
-- Instagram login
-- Review following list one by one
-- Unfollow or skip each user
-- See progress as you go
-- Final results summary
+👥 Follower viewer with profile picture, username, and full name
+
+📊 Progress-style walkthrough of each followed account
+
+✅ Keep / ❌ Unfollow buttons for each user
+
+📝 End summary showing number and list of unfollowed accounts
+
+🎨 High-fidelity UI design optimized for mobile view
 
 ## Setup
 
@@ -24,16 +29,13 @@ npx expo start
 
 3. Use Expo Go app on your mobile device to scan the QR code and run the app
 
-## Implementation Notes
 
-This is a prototype implementation that currently uses mock data. To make it fully functional:
 
-1. Implement the Instagram API integration in the login screen
-2. Replace mock following data with actual API calls
-3. Implement the actual unfollow functionality using the Instagram API
+
+
+
 
 ## Dependencies
-
 - React Native
 - Expo
 - React Navigation
