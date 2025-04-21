@@ -7,125 +7,148 @@ import {
   SafeAreaView,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
+import { api } from '../services/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'FollowingList'>;
 
 type User = {
-  id: string;
+  pk: string;
   username: string;
-  fullName: string;
-  imageUrl: string;
+  full_name: string;
+  profile_pic_url: string;
 };
 
-// Mock data - replace with actual API calls
-const mockFollowing: User[] = [
-  {
-    id: '1',
-    username: 'maria123',
-    fullName: 'Maria',
-    imageUrl: 'https://placekitten.com/100/100',
-  },
-  {
-    id: '2',
-    username: 'alex_turner',
-    fullName: 'Alex Turner',
-    imageUrl: 'https://placekitten.com/100/100',
-  },
-];
-
 export default function FollowingListScreen({ navigation, route }: Props) {
+  const [following, setFollowing] = useState<User[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [removedUsers, setRemovedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
-  const currentUser = mockFollowing[currentIndex];
+  useEffect(() => {
+    loadFollowingList();
+  }, []);
+
+  const loadFollowingList = async () => {
+    try {
+      const users = await api.getFollowingList();
+      setFollowing(users);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to load following list');
+      navigation.goBack();
+    } finally {
+      setInitialLoading(false);
+    }
+  };
+
+  const currentUser = following[currentIndex];
 
   const handleUnfollow = async () => {
     if (!currentUser) return;
     
     setLoading(true);
-    // TODO: Implement actual unfollow API call
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
-    
-    setRemovedUsers(prev => [...prev, currentUser]);
-    setLoading(false);
-    
-    if (currentIndex < mockFollowing.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else {
-      // Navigate to results when done
-      navigation.navigate('Result', {
-        removedUsers: removedUsers.map(user => ({
-          username: user.username,
-          fullName: user.fullName,
-        })),
-      });
+    try {
+      const response = await api.unfollowUser(currentUser.pk);
+      if (response.success) {
+        setRemovedUsers(prev => [...prev, currentUser]);
+        
+        if (currentIndex < following.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+        } else {
+          navigation.navigate('Result', {
+            removedUsers: removedUsers.map(user => ({
+              username: user.username,
+              fullName: user.full_name,
+            })),
+          });
+        }
+      } else {
+        Alert.alert('Error', response.error || 'Failed to unfollow user');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to unfollow user');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSkip = () => {
-    if (currentIndex < mockFollowing.length - 1) {
+    if (currentIndex < following.length - 1) {
       setCurrentIndex(prev => prev + 1);
     }
   };
 
+  if (initialLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0064e0" />
+          <Text style={styles.loadingText}>Loading following list...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (!currentUser) {
-    return null;
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}>
+          <Text style={styles.title}>No more users to review</Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('Result', {
+              removedUsers: removedUsers.map(user => ({
+                username: user.username,
+                fullName: user.full_name,
+              })),
+            })}
+          >
+            <Text style={styles.buttonText}>View Results</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Following List</Text>
-      </View>
-
-      <View style={styles.progress}>
-        <Text style={styles.progressText}>
-          {currentIndex + 1} of {mockFollowing.length}
+      <View style={styles.content}>
+        <Text style={styles.title}>Review Following</Text>
+        <Text style={styles.subtitle}>
+          {currentIndex + 1} of {following.length}
         </Text>
-        <View style={styles.progressBar}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                width: `${((currentIndex + 1) / mockFollowing.length) * 100}%`,
-              },
-            ]}
+
+        <View style={styles.userCard}>
+          <Image
+            source={{ uri: currentUser.profile_pic_url }}
+            style={styles.userImage}
           />
+          <Text style={styles.username}>{currentUser.username}</Text>
+          <Text style={styles.fullName}>{currentUser.full_name}</Text>
         </View>
-      </View>
 
-      <View style={styles.userCard}>
-        <Image
-          source={{ uri: currentUser.imageUrl }}
-          style={styles.userImage}
-        />
-        <Text style={styles.userName}>{currentUser.fullName}</Text>
-        <Text style={styles.userHandle}>{currentUser.username}</Text>
-
-        <View style={styles.actions}>
+        <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[styles.button, styles.skipButton]}
             onPress={handleSkip}
+            disabled={loading}
           >
-            <Text style={styles.skipButtonText}>Skip</Text>
+            <Text style={styles.buttonText}>Skip</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.unfollowButton]}
+            style={[styles.button, styles.unfollowButton, loading && styles.buttonDisabled]}
             onPress={handleUnfollow}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.unfollowButtonText}>Unfollow</Text>
+              <Text style={styles.buttonText}>Unfollow</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -139,35 +162,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  header: {
-    flexDirection: 'row',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
-  backButton: {
-    fontSize: 24,
-    marginRight: 16,
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  content: {
+    flex: 1,
+    padding: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 20,
   },
-  progress: {
-    padding: 20,
-    paddingTop: 0,
-  },
-  progressText: {
-    marginBottom: 8,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#eee',
-    borderRadius: 2,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#0064e0',
-    borderRadius: 2,
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 20,
   },
   userCard: {
     flex: 1,
@@ -180,17 +197,17 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     marginBottom: 16,
   },
-  userName: {
+  username: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 8,
   },
-  userHandle: {
+  fullName: {
     fontSize: 16,
     color: '#666',
     marginBottom: 32,
   },
-  actions: {
+  buttonContainer: {
     flexDirection: 'row',
     gap: 16,
   },
@@ -204,14 +221,13 @@ const styles = StyleSheet.create({
   skipButton: {
     backgroundColor: '#eee',
   },
-  skipButtonText: {
-    fontSize: 16,
-    color: '#666',
-  },
   unfollowButton: {
     backgroundColor: '#ff3b30',
   },
-  unfollowButtonText: {
+  buttonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  buttonText: {
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',

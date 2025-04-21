@@ -8,7 +8,12 @@ import ResultScreen from './screens/ResultScreen';
 export type RootStackParamList = {
   Login: undefined;
   FollowingList: { username: string };
-  Result: { removedUsers: Array<{ username: string, fullName: string }> };
+  Result: {
+    removedUsers: Array<{
+      username: string;
+      fullName: string;
+    }>;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

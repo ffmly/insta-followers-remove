@@ -6,20 +6,39 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
+import { api } from '../services/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    // TODO: Implement actual Instagram login
-    // For now, we'll just navigate to the following list
-    navigation.navigate('FollowingList', { username });
+    if (!username || !password) {
+      Alert.alert('Error', 'Please enter both username and password');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.login(username, password);
+      if (response.success && response.user) {
+        navigation.navigate('FollowingList', { username: response.user.username });
+      } else {
+        Alert.alert('Error', response.error || 'Login failed. Please check your credentials.');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -35,6 +54,7 @@ export default function LoginScreen({ navigation }: Props) {
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
+            editable={!loading}
           />
 
           <Text style={styles.label}>Password</Text>
@@ -44,13 +64,19 @@ export default function LoginScreen({ navigation }: Props) {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            editable={!loading}
           />
 
           <TouchableOpacity
-            style={styles.loginButton}
+            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
             onPress={handleLogin}
+            disabled={loading}
           >
-            <Text style={styles.loginButtonText}>Login</Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.loginButtonText}>Login</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -93,6 +119,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
+  },
+  loginButtonDisabled: {
+    opacity: 0.7,
   },
   loginButtonText: {
     color: '#fff',
