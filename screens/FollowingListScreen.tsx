@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Animated,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
@@ -28,6 +29,7 @@ export default function FollowingListScreen({ navigation, route }: Props) {
   const [removedUsers, setRemovedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [fadeAnim] = useState(new Animated.Value(1));
 
   useEffect(() => {
     loadFollowingList();
@@ -56,16 +58,24 @@ export default function FollowingListScreen({ navigation, route }: Props) {
       if (response.success) {
         setRemovedUsers(prev => [...prev, currentUser]);
         
-        if (currentIndex < following.length - 1) {
-          setCurrentIndex(prev => prev + 1);
-        } else {
-          navigation.navigate('Result', {
-            removedUsers: removedUsers.map(user => ({
-              username: user.username,
-              fullName: user.full_name,
-            })),
-          });
-        }
+        // Fade out animation
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }).start(() => {
+          if (currentIndex < following.length - 1) {
+            setCurrentIndex(prev => prev + 1);
+            fadeAnim.setValue(1);
+          } else {
+            navigation.navigate('Result', {
+              removedUsers: removedUsers.map(user => ({
+                username: user.username,
+                fullName: user.full_name,
+              })),
+            });
+          }
+        });
       } else {
         Alert.alert('Error', response.error || 'Failed to unfollow user');
       }
@@ -78,7 +88,14 @@ export default function FollowingListScreen({ navigation, route }: Props) {
 
   const handleSkip = () => {
     if (currentIndex < following.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setCurrentIndex(prev => prev + 1);
+        fadeAnim.setValue(1);
+      });
     }
   };
 
@@ -86,8 +103,8 @@ export default function FollowingListScreen({ navigation, route }: Props) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0064e0" />
-          <Text style={styles.loadingText}>Loading following list...</Text>
+          <ActivityIndicator size="large" color="#0095f6" />
+          <Text style={styles.loadingText}>Loading your following list...</Text>
         </View>
       </SafeAreaView>
     );
@@ -97,7 +114,8 @@ export default function FollowingListScreen({ navigation, route }: Props) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
-          <Text style={styles.title}>No more users to review</Text>
+          <Text style={styles.title}>All Done!</Text>
+          <Text style={styles.subtitle}>You've reviewed all your following</Text>
           <TouchableOpacity
             style={styles.button}
             onPress={() => navigation.navigate('Result', {
@@ -117,19 +135,21 @@ export default function FollowingListScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Review Following</Text>
-        <Text style={styles.subtitle}>
-          {currentIndex + 1} of {following.length}
-        </Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Review Following</Text>
+          <Text style={styles.subtitle}>
+            {currentIndex + 1} of {following.length}
+          </Text>
+        </View>
 
-        <View style={styles.userCard}>
+        <Animated.View style={[styles.userCard, { opacity: fadeAnim }]}>
           <Image
             source={{ uri: currentUser.profile_pic_url }}
             style={styles.userImage}
           />
-          <Text style={styles.username}>{currentUser.username}</Text>
+          <Text style={styles.username}>@{currentUser.username}</Text>
           <Text style={styles.fullName}>{currentUser.full_name}</Text>
-        </View>
+        </Animated.View>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
@@ -137,7 +157,7 @@ export default function FollowingListScreen({ navigation, route }: Props) {
             onPress={handleSkip}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>Skip</Text>
+            <Text style={[styles.buttonText, styles.skipButtonText]}>Skip</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -174,32 +194,48 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: 24,
+  },
+  header: {
+    marginBottom: 32,
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 20,
+    color: '#262626',
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 20,
   },
   userCard: {
     flex: 1,
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
+    backgroundColor: '#fafafa',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   userImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     marginBottom: 16,
+    borderWidth: 3,
+    borderColor: '#fff',
   },
   username: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#262626',
     marginBottom: 8,
   },
   fullName: {
@@ -210,26 +246,40 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     gap: 16,
+    marginTop: 24,
   },
   button: {
-    paddingVertical: 12,
+    flex: 1,
+    paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 8,
-    minWidth: 120,
+    borderRadius: 12,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   skipButton: {
-    backgroundColor: '#eee',
+    backgroundColor: '#fafafa',
+    borderWidth: 1,
+    borderColor: '#dbdbdb',
   },
   unfollowButton: {
-    backgroundColor: '#ff3b30',
+    backgroundColor: '#ed4956',
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
+    opacity: 0.7,
   },
   buttonText: {
     fontSize: 16,
-    color: '#fff',
     fontWeight: '600',
+    color: '#fff',
+  },
+  skipButtonText: {
+    color: '#262626',
   },
 }); 
